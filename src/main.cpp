@@ -12,10 +12,10 @@
 #define SDA_PIN 5
 #define SCL_PIN 6
 
-#define Num_Samples 112 //  number of dample of signal
+#define WT_FRAME_SAMPLE_COUNT 112 //  number of dample of signal
 #define MaxWaveTypes 4 // types of wave (signal)
 
-static byte waveTable[MaxWaveTypes][Num_Samples] = {
+static byte waveTable[MaxWaveTypes][WT_FRAME_SAMPLE_COUNT] = {
     // Sin wave
     {
         0x80, 0x83, 0x87, 0x8A, 0x8E, 0x91, 0x95, 0x98, 0x9B, 0x9E, 0xA2, 0xA5, 0xA7, 0xAA, 0xAD, 0xAF,
@@ -84,19 +84,26 @@ float IRAM_ATTR envelop()
     float x = (float)sampleCount / (float)sampleCountDuration;
     float y = 1.0 - x;
     return 1.0 - y * y;
+
+    // Might want to use better interpolation like monotone cubic interpolation
+    // https://www.paulinternet.nl/?page=bicubic
+    // https://en.wikipedia.org/wiki/Monotone_cubic_interpolation
+    // https://github.com/ttk592/spline/
 }
 
-int pos = 0;
+float sampleIndex = 0.0f;
+float sampleStep = 1.0f;
+
 void IRAM_ATTR onTimer()
 {
     if (sampleCount < sampleCountDuration) {
         float env = envelop();
-        ledcWrite(ledChannel, waveTable[2][pos] * env);
-        sampleCount++;
-        pos++;
-        if (pos >= Num_Samples) {
-            pos = 0;
+        sampleIndex += sampleStep;
+        while (sampleIndex >= WT_FRAME_SAMPLE_COUNT) {
+            sampleIndex -= WT_FRAME_SAMPLE_COUNT;
         }
+        ledcWrite(ledChannel, waveTable[2][(uint16_t)sampleIndex] * env);
+        sampleCount++;
     } else {
         ledcWrite(ledChannel, 0);
     }
@@ -128,7 +135,3 @@ void loop()
     triggerKick();
     delay(2000);
 }
-
-// https://www.paulinternet.nl/?page=bicubic
-// https://en.wikipedia.org/wiki/Monotone_cubic_interpolation
-// https://github.com/ttk592/spline/
