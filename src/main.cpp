@@ -78,11 +78,20 @@ const int ledChannel = 0;
 uint sampleCountDuration = 150 * SAMPLE_PER_MS;
 uint sampleCount = -1; // set it to max uint value so it will not trigger the kick at the beginning
 
+float IRAM_ATTR envelop()
+{
+    // use interpolation to get the envelop value
+    float x = (float)sampleCount / (float)sampleCountDuration;
+    float y = 1.0 - x;
+    return 1.0 - y * y;
+}
+
 int pos = 0;
 void IRAM_ATTR onTimer()
 {
     if (sampleCount < sampleCountDuration) {
-        ledcWrite(ledChannel, waveTable[2][pos]);
+        float env = envelop();
+        ledcWrite(ledChannel, waveTable[2][pos] * env);
         sampleCount++;
         pos++;
         if (pos >= Num_Samples) {
