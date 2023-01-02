@@ -74,6 +74,8 @@ static byte waveTable[MaxWaveTypes][WT_FRAME_SAMPLE_COUNT] = {
 const int ledPin = 3;
 const int ledChannel = 0;
 
+float frequency = 130.0f;
+
 // 150ms kick duration
 uint sampleCountDuration = 150 * SAMPLE_PER_MS;
 uint sampleCount = -1; // set it to max uint value so it will not trigger the kick at the beginning
@@ -98,6 +100,8 @@ void IRAM_ATTR onTimer()
 {
     if (sampleCount < sampleCountDuration) {
         float env = envelop();
+        sampleStep = WT_FRAME_SAMPLE_COUNT * frequency * env / SAMPLE_RATE;
+
         sampleIndex += sampleStep;
         while (sampleIndex >= WT_FRAME_SAMPLE_COUNT) {
             sampleIndex -= WT_FRAME_SAMPLE_COUNT;
