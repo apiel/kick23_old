@@ -91,7 +91,6 @@ uint sampleCount = -1; // set it to max uint value so it will not trigger the ki
 
 // float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.05f }, { 0.1f, 0.3f }, { 0.05f, 0.5f } };
 float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.1f }, { 0.9f, 0.15f }, { 0.7f, 0.6f } };
-
 float envelopFreq[ENVELOP_STEPS][2] = { { 0.26f, 0.03f }, { 0.25f, 0.31f }, { 0.24f, 0.32f } };
 
 struct EnvelopStatus {
@@ -154,11 +153,6 @@ float IRAM_ATTR envelop(EnvelopStatus* status, float (*envelop)[2])
     }
 
     return status->value;
-
-    // Might want to use interpolation like monotone cubic interpolation
-    // https://www.paulinternet.nl/?page=bicubic
-    // https://en.wikipedia.org/wiki/Monotone_cubic_interpolation
-    // https://github.com/ttk592/spline/
 }
 
 float midVal[3] = { 1.0f, 0.26f, 0.0f };
