@@ -84,91 +84,31 @@ float frequency = 600.0f;
 uint sampleCountDuration = 300 * SAMPLE_PER_MS;
 uint sampleCount = -1; // set it to max uint value so it will not trigger the kick at the beginning
 
-#define ENVELOP_STEPS 3
+#define ENVELOP_STEPS 5
 
 // float envelopFreq[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
 // float envelopAmp[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
 
 // float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.05f }, { 0.1f, 0.3f }, { 0.05f, 0.5f } };
-float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.1f }, { 0.9f, 0.15f }, { 0.7f, 0.6f } };
-float envelopFreq[ENVELOP_STEPS][2] = { { 0.26f, 0.03f }, { 0.25f, 0.31f }, { 0.24f, 0.32f } };
+float envelopAmp[ENVELOP_STEPS][2] = { { 1.0f, 0.0f }, { 0.6f, 0.1f }, { 0.9f, 0.15f }, { 0.7f, 0.6f }, { 0.0f, 1.0f } };
+float envelopFreq[ENVELOP_STEPS][2] = { { 1.0f, 0.0f }, { 0.26f, 0.03f }, { 0.24f, 0.35f }, { 0.22f, 0.4f }, { 0.0f, 1.0f } };
 
-struct EnvelopStatus {
-    float value;
-    float start[2];
-    float target[2];
-    int stepIndex;
-    float stepAccumulator;
-};
+uint envelopAmpIndex = 0;
+uint envelopFreqIndex = 0;
 
-EnvelopStatus envelopAmpStatus;
-EnvelopStatus envelopFreqStatus;
-
-void IRAM_ATTR setEnvelopStatus(EnvelopStatus* status, float (*envelop)[2], int index)
+float IRAM_ATTR envelop(float (*envelop)[2], uint* envelopIndex)
 {
-    status->start[0] = 1.0f; // We assume the envelop starts at 1.0f
-    status->start[1] = 0.0f;
-
-    status->target[0] = 0.0f; // We assume the envelop ends at 0.0f
-    status->target[1] = 1.0f;
-
-    if (index > 0) {
-        status->start[0] = envelop[index - 1][0];
-        status->target[1] = envelop[index - 1][1];
-    }
-    if (index < ENVELOP_STEPS) {
-        status->target[0] = envelop[index][0];
-        status->target[1] = envelop[index][1];
-    }
-
-    float count = sampleCountDuration * (status->target[1] - status->start[1]);
-    if (count) {
-        status->stepAccumulator = (status->start[0] - status->target[0]) / count;
-    } else {
-        status->stepAccumulator = status->start[0] - status->target[0];
-    }
-
-    status->stepIndex = index;
-}
-
-void resetEnvelopStatus(EnvelopStatus* status, float (*envelop)[2])
-{
-    status->value = 1.0f;
-    setEnvelopStatus(status, envelopFreq, 0);
-}
-
-float IRAM_ATTR envelop(EnvelopStatus* status, float (*envelop)[2])
-{
-    if (status->stepIndex > ENVELOP_STEPS) {
+    if (envelopFreqIndex > ENVELOP_STEPS - 1) {
         return 0.0f;
     }
 
-    status->value += status->stepAccumulator;
-
-    if (sampleCount >= sampleCountDuration * status->target[1]) {
-        status->stepIndex++;
-        if (status->stepIndex < ENVELOP_STEPS + 1) {
-            setEnvelopStatus(status, envelop, status->stepIndex);
-        }
-    }
-
-    return status->value;
-}
-
-float midVal[3] = { 1.0f, 0.26f, 0.0f };
-float midTime[3] = { 0.0f, 0.03f, 1.0f };
-
-int_fast64_t midIndex = 0;
-
-float IRAM_ATTR envelop2()
-{
     float time = (float)sampleCount / (float)sampleCountDuration;
-    if (time >= midTime[midIndex+1]) {
-       midIndex++;
+    if (time >= envelop[*envelopIndex + 1][1]) {
+        (*envelopIndex)++;
     }
-    float timeOffset = midTime[midIndex+1] - midTime[midIndex];
-    float timeRatio = (time - midTime[midIndex]) / timeOffset;
-    return (midVal[midIndex+1] - midVal[midIndex]) * timeRatio + midVal[midIndex];
+    float timeOffset = envelop[*envelopIndex + 1][1] - envelop[*envelopIndex][1];
+    float timeRatio = (time - envelop[*envelopIndex][1]) / timeOffset;
+    return (envelop[*envelopIndex + 1][0] - envelop[*envelopIndex][0]) * timeRatio + envelop[*envelopIndex][0];
 }
 
 float IRAM_ATTR envelop()
@@ -186,7 +126,8 @@ void IRAM_ATTR onTimer()
         // float envFreq = envelop(&envelopFreqStatus, envelopFreq);
         // float envAmp = envelop();
         // float envFreq = 1.0f - envelop();
-        float envFreq = envelop2();
+        // float envFreq = envelop2();
+        float envFreq = envelop(envelopFreq, &envelopFreqIndex);
         float envAmp = 1.0f;
         // float envFreq = 0.0f;
 
@@ -208,10 +149,9 @@ void IRAM_ATTR onTimer()
 
 void triggerKick()
 {
-    midIndex = 0;
     sampleCount = 0;
-    resetEnvelopStatus(&envelopAmpStatus, envelopAmp);
-    resetEnvelopStatus(&envelopFreqStatus, envelopFreq);
+    envelopAmpIndex = 0;
+    envelopFreqIndex = 0;
 }
 
 void setup()
