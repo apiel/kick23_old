@@ -77,7 +77,7 @@
 const int ledPin = 3;
 const int ledChannel = 0;
 
-float frequency = 400.0f;
+float frequency = 600.0f;
 
 // 90ms kick duration
 // uint sampleCountDuration = 90 * SAMPLE_PER_MS;
@@ -86,12 +86,13 @@ uint sampleCount = -1; // set it to max uint value so it will not trigger the ki
 
 #define ENVELOP_STEPS 3
 
-float freqModulationRange = 5.0f;
 // float envelopFreq[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
 // float envelopAmp[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
 
-float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.05f }, { 0.1f, 0.3f }, { 0.05f, 0.5f } };
+// float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.05f }, { 0.1f, 0.3f }, { 0.05f, 0.5f } };
 float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.1f }, { 0.9f, 0.15f }, { 0.7f, 0.6f } };
+
+float envelopFreq[ENVELOP_STEPS][2] = { { 0.26f, 0.03f }, { 0.25f, 0.31f }, { 0.24f, 0.32f } };
 
 struct EnvelopStatus {
     float value;
@@ -160,13 +161,24 @@ float IRAM_ATTR envelop(EnvelopStatus* status, float (*envelop)[2])
     // https://github.com/ttk592/spline/
 }
 
+float midVal[3] = { 1.0f, 0.26f, 0.0f };
+float midTime[3] = { 0.0f, 0.03f, 1.0f };
+
+int_fast64_t midIndex = 0;
+
+float IRAM_ATTR envelop2()
+{
+    float time = (float)sampleCount / (float)sampleCountDuration;
+    if (time >= midTime[midIndex+1]) {
+       midIndex++;
+    }
+    float timeOffset = midTime[midIndex+1] - midTime[midIndex];
+    float timeRatio = (time - midTime[midIndex]) / timeOffset;
+    return (midVal[midIndex+1] - midVal[midIndex]) * timeRatio + midVal[midIndex];
+}
+
 float IRAM_ATTR envelop()
 {
-    // // use interpolation to get the envelop value
-    // float x = (float)sampleCount / (float)sampleCountDuration;
-    // float y = 1.0 - x;
-    // return 1.0 - y * y;
-
     return (float)sampleCount / (float)sampleCountDuration;
 }
 
@@ -179,12 +191,13 @@ void IRAM_ATTR onTimer()
         // float envAmp = envelop(&envelopAmpStatus, envelopAmp);
         // float envFreq = envelop(&envelopFreqStatus, envelopFreq);
         // float envAmp = envelop();
-        float envFreq = envelop();
+        // float envFreq = 1.0f - envelop();
+        float envFreq = envelop2();
         float envAmp = 1.0f;
         // float envFreq = 0.0f;
 
         // sampleStep = WT_FRAME_SAMPLE_COUNT * (frequency + (envFreq * freqModulationRange)) / SAMPLE_RATE;
-        sampleStep = WT_FRAME_SAMPLE_COUNT * (frequency * (1.0-envFreq)) / SAMPLE_RATE;
+        sampleStep = WT_FRAME_SAMPLE_COUNT * (frequency * envFreq) / SAMPLE_RATE;
 
         sampleIndex += sampleStep;
         while (sampleIndex >= WT_FRAME_SAMPLE_COUNT) {
@@ -192,7 +205,7 @@ void IRAM_ATTR onTimer()
         }
         // ledcWrite(ledChannel, waveTable[3][(uint16_t)sampleIndex] * envAmp);
         // ledcWrite(ledChannel, WT_Sine[(uint16_t)sampleIndex] * envAmp);
-        ledcWrite(ledChannel, (WT_Sine[(uint16_t)sampleIndex]/ 32768.0) * envAmp * 255.0 + 128.0);
+        ledcWrite(ledChannel, (WT_Sine[(uint16_t)sampleIndex] / 32768.0) * envAmp * 255.0 + 128.0);
         sampleCount++;
     } else {
         ledcWrite(ledChannel, 0);
@@ -201,6 +214,7 @@ void IRAM_ATTR onTimer()
 
 void triggerKick()
 {
+    midIndex = 0;
     sampleCount = 0;
     resetEnvelopStatus(&envelopAmpStatus, envelopAmp);
     resetEnvelopStatus(&envelopFreqStatus, envelopFreq);
