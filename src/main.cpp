@@ -82,73 +82,79 @@ uint sampleCount = -1; // set it to max uint value so it will not trigger the ki
 
 #define ENVELOP_STEPS 3
 
-float envelopAmp[ENVELOP_STEPS][2] = { { 0.5f, 0.9f }, { 0.3f, 0.7f }, { 0.2f, 0.5f } };
-float envelopFreq[ENVELOP_STEPS][2] = { { 0.6f, 0.9f }, { 0.9f, 0.85f }, { 0.7f, 0.4f } };
-
-struct EnvelopStep {
-    float value;
-    int count;
-};
-
-EnvelopStep envelopAmpSteps[ENVELOP_STEPS + 1];
-EnvelopStep envelopFreqSteps[ENVELOP_STEPS + 1];
+float envelopFreq[ENVELOP_STEPS][2] = { { 0.5f, 0.9f }, { 0.3f, 0.7f }, { 0.2f, 0.5f } };
+float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.9f }, { 0.9f, 0.85f }, { 0.7f, 0.4f } };
 
 struct EnvelopStatus {
     float value;
-    int count;
+    float start[2];
+    float target[2];
     int stepIndex;
+    float stepAccumulator;
 };
 
 EnvelopStatus envelopAmpStatus;
 EnvelopStatus envelopFreqStatus;
 
-void updateEnvelopStep(EnvelopStep* steps, float (*envelop)[2], int index)
+void IRAM_ATTR setEnvelopStatus(EnvelopStatus* status, float (*envelop)[2], int index)
 {
-    float start[2] = { 1.0f, 0.0f }; // We assume the envelop starts at 1.0f
-    float target[2] = { 0.0f, 1.0f }; // We assume the envelop ends at 0.0f
+    status->start[0] = 1.0f; // We assume the envelop starts at 1.0f
+    status->start[1] = 0.0f;
+
+    status->target[0] = 0.0f; // We assume the envelop ends at 0.0f
+    status->target[1] = 1.0f;
 
     if (index > 0) {
-        start[0] = envelop[index - 1][0];
-        start[1] = envelop[index - 1][1];
+        status->start[0] = envelop[index - 1][0];
+        status->target[1] = envelop[index - 1][1];
     }
     if (index < ENVELOP_STEPS) {
-        target[0] = envelop[index][0];
-        target[1] = envelop[index][1];
+        status->target[0] = envelop[index][0];
+        status->target[1] = envelop[index][1];
     }
 
-    steps[index].count = sampleCountDuration * (target[1] - start[1]);
-    if (steps[index].count) {
-        steps[index].value = (start[0] - target[0]) / steps[index].count;
+    float count = sampleCountDuration * (status->target[1] - status->start[1]);
+    if (count) {
+        status->stepAccumulator = (status->start[0] - status->target[0]) / count;
     } else {
-        steps[index].value = start[0] - target[0];
+        status->stepAccumulator = status->start[0] - status->target[0];
     }
+
+    status->stepIndex = index;
 }
 
-void updateEnvelopSteps(EnvelopStep* steps, float (*envelop)[2])
+void resetEnvelopStatus(EnvelopStatus* status, float (*envelop)[2])
 {
-    // There is always one more step values than the number of envelop steps
-    // because we assume the envelop starts at 1.0f and ends at 0.0f so we don't
-    // need to define those step in the array.
-    for (int i = 0; i <= ENVELOP_STEPS; i++) {
-        updateEnvelopStep(steps, envelop, i);
-    }
+    status->value = 1.0f;
+    setEnvelopStatus(status, envelopFreq, 0);
 }
 
-float IRAM_ATTR envelop(EnvelopStep* steps, EnvelopStatus* status)
+float IRAM_ATTR envelop(EnvelopStatus* status, float (*envelop)[2])
 {
     if (status->stepIndex > ENVELOP_STEPS) {
         return 0.0f;
     }
 
-    status->value += steps[status->stepIndex].value;
-    status->count--;
-    if (status->count == 0) {
+    status->value += status->stepAccumulator;
+
+    if (sampleCount >= sampleCountDuration * status->target[1]) {
         status->stepIndex++;
         if (status->stepIndex < ENVELOP_STEPS + 1) {
-            status->count = steps[status->stepIndex].count;
+            setEnvelopStatus(status, envelop, status->stepIndex);
         }
     }
+
     return status->value;
+
+    // status->value += steps[status->stepIndex].value;
+    // status->count--;
+    // if (status->count == 0) {
+    //     status->stepIndex++;
+    //     if (status->stepIndex < ENVELOP_STEPS + 1) {
+    //         status->count = steps[status->stepIndex].count;
+    //     }
+    // }
+    // return status->value;
 
     // Might better want to use interpolation like monotone cubic interpolation
     // https://www.paulinternet.nl/?page=bicubic
@@ -162,8 +168,8 @@ float sampleStep = 1.0f;
 void IRAM_ATTR onTimer()
 {
     if (sampleCount < sampleCountDuration) {
-        float envAmp = envelop(envelopAmpSteps, &envelopAmpStatus);
-        float envFreq = envelop(envelopFreqSteps, &envelopFreqStatus);
+        float envAmp = envelop(&envelopAmpStatus, envelopAmp);
+        float envFreq = envelop(&envelopFreqStatus, envelopFreq);
         sampleStep = WT_FRAME_SAMPLE_COUNT * frequency * envFreq / SAMPLE_RATE;
 
         sampleIndex += sampleStep;
@@ -180,19 +186,12 @@ void IRAM_ATTR onTimer()
 void triggerKick()
 {
     sampleCount = 0;
-    envelopAmpStatus.value = 1.0f;
-    envelopAmpStatus.count = envelopAmpSteps[0].count;
-    envelopAmpStatus.stepIndex = 0;
-    envelopFreqStatus.value = 1.0f;
-    envelopFreqStatus.count = envelopFreqSteps[0].count;
-    envelopFreqStatus.stepIndex = 0;
+    resetEnvelopStatus(&envelopAmpStatus, envelopAmp);
+    resetEnvelopStatus(&envelopFreqStatus, envelopFreq);
 }
 
 void setup()
 {
-    updateEnvelopSteps(envelopAmpSteps, envelopAmp);
-    updateEnvelopSteps(envelopFreqSteps, envelopFreq);
-
     // configure LED PWM functionalitites
     ledcSetup(ledChannel, SAMPLE_RATE, 8);
 
@@ -207,8 +206,12 @@ void setup()
     timerAlarmEnable(timer);
 }
 
+uint8_t counter = 0;
 void loop()
 {
-    triggerKick();
-    delay(2000);
+    if (counter < 4) {
+        triggerKick();
+        delay(2000);
+        counter++;
+    }
 }
