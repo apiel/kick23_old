@@ -74,17 +74,20 @@ static byte waveTable[MaxWaveTypes][WT_FRAME_SAMPLE_COUNT] = {
 const int ledPin = 3;
 const int ledChannel = 0;
 
-float frequency = 130.0f;
+float frequency = 80.0f;
 
-// 150ms kick duration
-uint sampleCountDuration = 150 * SAMPLE_PER_MS;
+// 90ms kick duration
+uint sampleCountDuration = 90 * SAMPLE_PER_MS;
 uint sampleCount = -1; // set it to max uint value so it will not trigger the kick at the beginning
 
 #define ENVELOP_STEPS 3
 
-float freqModulationRange = 20.0f;
-float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.95f }, { 0.1f, 0.7f }, { 0.05f, 0.5f } };
-float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.9f }, { 0.9f, 0.85f }, { 0.7f, 0.4f } };
+float freqModulationRange = 5.0f;
+float envelopFreq[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
+float envelopAmp[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
+
+// float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.05f }, { 0.1f, 0.3f }, { 0.05f, 0.5f } };
+// float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.1f }, { 0.9f, 0.15f }, { 0.7f, 0.6f } };
 
 struct EnvelopStatus {
     float value;
@@ -167,7 +170,7 @@ void IRAM_ATTR onTimer()
         while (sampleIndex >= WT_FRAME_SAMPLE_COUNT) {
             sampleIndex -= WT_FRAME_SAMPLE_COUNT;
         }
-        ledcWrite(ledChannel, waveTable[2][(uint16_t)sampleIndex] * envAmp);
+        ledcWrite(ledChannel, waveTable[0][(uint16_t)sampleIndex] * envAmp);
         sampleCount++;
     } else {
         ledcWrite(ledChannel, 0);
