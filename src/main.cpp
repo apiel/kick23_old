@@ -82,7 +82,8 @@ uint sampleCount = -1; // set it to max uint value so it will not trigger the ki
 
 #define ENVELOP_STEPS 3
 
-float envelopFreq[ENVELOP_STEPS][2] = { { 0.5f, 0.9f }, { 0.3f, 0.7f }, { 0.2f, 0.5f } };
+float freqModulationRange = 20.0f;
+float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.95f }, { 0.1f, 0.7f }, { 0.05f, 0.5f } };
 float envelopAmp[ENVELOP_STEPS][2] = { { 0.6f, 0.9f }, { 0.9f, 0.85f }, { 0.7f, 0.4f } };
 
 struct EnvelopStatus {
@@ -146,17 +147,7 @@ float IRAM_ATTR envelop(EnvelopStatus* status, float (*envelop)[2])
 
     return status->value;
 
-    // status->value += steps[status->stepIndex].value;
-    // status->count--;
-    // if (status->count == 0) {
-    //     status->stepIndex++;
-    //     if (status->stepIndex < ENVELOP_STEPS + 1) {
-    //         status->count = steps[status->stepIndex].count;
-    //     }
-    // }
-    // return status->value;
-
-    // Might better want to use interpolation like monotone cubic interpolation
+    // Might want to use interpolation like monotone cubic interpolation
     // https://www.paulinternet.nl/?page=bicubic
     // https://en.wikipedia.org/wiki/Monotone_cubic_interpolation
     // https://github.com/ttk592/spline/
@@ -170,7 +161,7 @@ void IRAM_ATTR onTimer()
     if (sampleCount < sampleCountDuration) {
         float envAmp = envelop(&envelopAmpStatus, envelopAmp);
         float envFreq = envelop(&envelopFreqStatus, envelopFreq);
-        sampleStep = WT_FRAME_SAMPLE_COUNT * frequency * envFreq / SAMPLE_RATE;
+        sampleStep = WT_FRAME_SAMPLE_COUNT * (frequency + (envFreq * freqModulationRange)) / SAMPLE_RATE;
 
         sampleIndex += sampleStep;
         while (sampleIndex >= WT_FRAME_SAMPLE_COUNT) {
