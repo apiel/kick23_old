@@ -122,13 +122,12 @@ float sampleStep = 1.0f;
 void IRAM_ATTR onTimer()
 {
     if (sampleCount < sampleCountDuration) {
-        // float envAmp = envelop(&envelopAmpStatus, envelopAmp);
-        // float envFreq = envelop(&envelopFreqStatus, envelopFreq);
         // float envAmp = envelop();
         // float envFreq = 1.0f - envelop();
         // float envFreq = envelop2();
         float envFreq = envelop(envelopFreq, &envelopFreqIndex);
-        float envAmp = 1.0f;
+        float envAmp = envelop(envelopAmp, &envelopAmpIndex);
+        // float envAmp = 1.0f;
         // float envFreq = 0.0f;
 
         // sampleStep = WT_FRAME_SAMPLE_COUNT * (frequency + (envFreq * freqModulationRange)) / SAMPLE_RATE;
@@ -140,7 +139,8 @@ void IRAM_ATTR onTimer()
         }
         // ledcWrite(ledChannel, waveTable[3][(uint16_t)sampleIndex] * envAmp);
         // ledcWrite(ledChannel, WT_Sine[(uint16_t)sampleIndex] * envAmp);
-        ledcWrite(ledChannel, (WT_Sine[(uint16_t)sampleIndex] / 32768.0) * envAmp * 255.0 + 128.0);
+        // ledcWrite(ledChannel, (WT_Sine[(uint16_t)sampleIndex] / 32768.0) * envAmp * 255.0 + 128.0);
+        ledcWrite(ledChannel, ((WT_Sine[(uint16_t)sampleIndex] / 32768.0) * 255.0 + 128.0) * envAmp);
         sampleCount++;
     } else {
         ledcWrite(ledChannel, 0);
