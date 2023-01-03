@@ -86,11 +86,9 @@ uint sampleCount = -1; // set it to max uint value so it will not trigger the ki
 
 #define ENVELOP_STEPS 5
 
-// float envelopFreq[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
-// float envelopAmp[ENVELOP_STEPS][2] = { { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
-
-// float envelopFreq[ENVELOP_STEPS][2] = { { 0.3f, 0.05f }, { 0.1f, 0.3f }, { 0.05f, 0.5f } };
-float envelopAmp[ENVELOP_STEPS][2] = { { 1.0f, 0.0f }, { 0.6f, 0.1f }, { 0.9f, 0.15f }, { 0.7f, 0.6f }, { 0.0f, 1.0f } };
+// REMOVE clicking from beginning
+// float envelopAmp[ENVELOP_STEPS][2] = { { 0.0f, 0.0f }, { 1.0f, 0.01f }, { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
+float envelopAmp[ENVELOP_STEPS][2] = { { 0.0f, 0.0f }, { 1.0f, 0.01f }, { 0.3f, 0.4f }, { 0.0f, 1.0f }, { 0.0f, 1.0f } };
 float envelopFreq[ENVELOP_STEPS][2] = { { 1.0f, 0.0f }, { 0.26f, 0.03f }, { 0.24f, 0.35f }, { 0.22f, 0.4f }, { 0.0f, 1.0f } };
 
 uint envelopAmpIndex = 0;
