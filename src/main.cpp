@@ -104,8 +104,6 @@ void setup()
 // Variables will change:
 int lastState = HIGH; // the previous state from the input pin
 
-int pot1Value = 0;
-
 uint8_t counter = 0;
 void loop()
 {
@@ -129,11 +127,7 @@ void loop()
     lastState = currentState;
 
     // 1 / 4095 * 100 = 0.0244140625
-    int potValue = analogRead(POT1_PIN) * 0.0244140625; // could also use map(analogValue, 0, 4095, 0, 100);
-    if (potValue != pot1Value) {
-        Serial.printf("Pot1 value changed: %d\n", potValue);
-        pot1Value = potValue;
-    }
+    updatePot(0, roundf(analogRead(POT1_PIN) * 0.0244140625));
 
     handleRotaryEncoder();
 }
