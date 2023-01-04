@@ -39,6 +39,8 @@ bool handleKeyboard(SDL_KeyboardEvent* event)
     case SDL_SCANCODE_SPACE: {
         if (event->type == SDL_KEYDOWN) {
             buttonPressed();
+        } else {
+            buttonReleased();
         }
         break;
     }

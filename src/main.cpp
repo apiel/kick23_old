@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 
+#ifndef APP_LOG
+#define APP_LOG Serial.printf
+#endif
+
 #include "def.h"
 #include "synth.h"
 #include "wavetable_square.h"
@@ -14,12 +18,13 @@
 
 #define SDA_PIN 5
 #define SCL_PIN 6
-#define AUDIO_PIN 3
+#define AUDIO_PIN 3 // is adc pin might want to change
 #define BUTTON_PIN 21
+#define POT1_PIN 1
 
 #define ROTARY_CLK_PIN 6
 #define ROTARY_DT_PIN 5
-#define ROTARY_SW_PIN 4
+#define ROTARY_SW_PIN 4 // is adc pin might want to change
 
 #define PWM_CHANNEL 0
 
@@ -40,31 +45,25 @@
 
 ////// ROTARY ENCODER
 
-int counterRT = 0;
 int currentStateCLK;
 int lastStateCLK;
-unsigned long lastButtonPress = 0;
+unsigned long rotaryLastPush = 0;
 
 void handleRotaryEncoder()
 {
     currentStateCLK = digitalRead(ROTARY_CLK_PIN);
     // React to only HIGH state change to avoid double count
     if (currentStateCLK != lastStateCLK && currentStateCLK == HIGH) {
-        if (digitalRead(ROTARY_DT_PIN) != currentStateCLK) {
-            counterRT++;
-        } else {
-            counterRT--;
-        }
-        Serial.println(counterRT);
+        rotaryChanged(digitalRead(ROTARY_DT_PIN) == currentStateCLK ? -1 : 1);
     }
     lastStateCLK = currentStateCLK;
 
     int btnState = digitalRead(ROTARY_SW_PIN);
     if (btnState == LOW) {
-        if (millis() - lastButtonPress > 50) {
+        if (millis() - rotaryLastPush > 50) {
             Serial.println("Rotary Button pressed!");
         }
-        lastButtonPress = millis();
+        rotaryLastPush = millis();
     }
 }
 
@@ -105,6 +104,8 @@ void setup()
 // Variables will change:
 int lastState = HIGH; // the previous state from the input pin
 
+int pot1Value = 0;
+
 uint8_t counter = 0;
 void loop()
 {
@@ -116,11 +117,23 @@ void loop()
     }
 
     int currentState = digitalRead(BUTTON_PIN);
-    if (currentState != lastState && currentState == HIGH) {
-        Serial.println("Button pressed");
-        buttonPressed();
+    if (currentState != lastState) {
+        if (currentState == LOW) {
+            Serial.println("Button pressed");
+            buttonPressed();
+        } else {
+            Serial.println("Button released");
+            buttonReleased();
+        }
     }
     lastState = currentState;
+
+    // 1 / 4095 * 100 = 0.0244140625
+    int potValue = analogRead(POT1_PIN) * 0.0244140625; // could also use map(analogValue, 0, 4095, 0, 100);
+    if (potValue != pot1Value) {
+        Serial.printf("Pot1 value changed: %d\n", potValue);
+        pot1Value = potValue;
+    }
 
     handleRotaryEncoder();
 }

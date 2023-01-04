@@ -87,4 +87,16 @@ void buttonPressed()
     triggerSound();
 }
 
+void buttonReleased()
+{
+    // Here the button could do other function
+}
+
+int counterRT = 0;
+void rotaryChanged(int8_t direction)
+{
+    counterRT += direction;
+    APP_LOG("rotaryChanged: %d\n", counterRT);
+}
+
 #endif
