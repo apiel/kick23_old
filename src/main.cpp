@@ -11,8 +11,13 @@
 #ifdef U8X8_HAVE_HW_I2C
 #include <Wire.h>
 #endif
+
 #define SDA_PIN 5
 #define SCL_PIN 6
+#define AUDIO_PIN 3
+#define BUTTON_PIN 21
+
+#define PWM_CHANNEL 0
 
 // U8G2_SSD1306_72X40_ER_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   // EastRising 0.42" OLED
 
@@ -29,23 +34,22 @@
 //   delay(1000);
 // }
 
-// the number of the LED pin
-const int ledPin = 3;
-const int ledChannel = 0;
-
+// Use timer to generate sound frequency
 void IRAM_ATTR onTimer()
 {
-    // ledcWrite(ledChannel, getSample() * 512.0);
-    ledcWrite(ledChannel, getSample() * 800.0);
+    // ledcWrite(PWM_CHANNEL, getSample() * 512.0);
+    ledcWrite(PWM_CHANNEL, getSample() * 800.0);
 }
 
 void setup()
 {
+    pinMode(BUTTON_PIN, INPUT_PULLUP); // config GIOP21 as input pin and enable the internal pull-up resistor
+
     // configure LED PWM functionalitites
-    ledcSetup(ledChannel, SAMPLE_RATE, 8);
+    ledcSetup(PWM_CHANNEL, SAMPLE_RATE, 8);
 
     // attach the channel to the GPIO to be controlled
-    ledcAttachPin(ledPin, ledChannel);
+    ledcAttachPin(AUDIO_PIN, PWM_CHANNEL);
 
     // on ESP32 timer run at 80MHz = 80,000,000 ticks per second
     // since we only need 44.1kHz, we can use a divider of 1814
@@ -55,12 +59,23 @@ void setup()
     timerAlarmEnable(timer);
 }
 
+// Variables will change:
+int lastState = HIGH; // the previous state from the input pin
+int currentState; // the current reading from the input pin
+
 uint8_t counter = 0;
 void loop()
 {
-    if (counter < 4) {
+    if (counter < 3) {
         triggerSound();
-        delay(2000);
+        delay(1000);
         counter++;
     }
+
+    currentState = digitalRead(BUTTON_PIN);
+    if (lastState == LOW && currentState == HIGH) {
+        Serial.println("The state changed from LOW to HIGH");
+        triggerSound();
+    }
+    lastState = currentState;
 }
