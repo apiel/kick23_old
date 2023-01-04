@@ -81,4 +81,10 @@ void triggerSound()
     envelopFreqIndex = 0;
 }
 
+void buttonPressed()
+{
+    // Here the button could do other function
+    triggerSound();
+}
+
 #endif

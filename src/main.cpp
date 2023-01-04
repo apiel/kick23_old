@@ -75,9 +75,9 @@ void loop()
     }
 
     currentState = digitalRead(BUTTON_PIN);
-    if (lastState == LOW && currentState == HIGH) {
-        Serial.println("The state changed from LOW to HIGH");
-        triggerSound();
+    if (currentState != lastState && currentState == HIGH) {
+        Serial.println("Button pressed");
+        buttonPressed();
     }
     lastState = currentState;
 }
