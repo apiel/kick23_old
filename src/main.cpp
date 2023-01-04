@@ -43,6 +43,7 @@ void IRAM_ATTR onTimer()
 
 void setup()
 {
+    Serial.begin(115200);
     pinMode(BUTTON_PIN, INPUT_PULLUP); // config GIOP21 as input pin and enable the internal pull-up resistor
 
     // configure LED PWM functionalitites
@@ -67,6 +68,7 @@ uint8_t counter = 0;
 void loop()
 {
     if (counter < 3) {
+        Serial.println("Trigger sound");
         triggerSound();
         delay(1000);
         counter++;
