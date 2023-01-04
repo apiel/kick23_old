@@ -17,6 +17,10 @@
 #define AUDIO_PIN 3
 #define BUTTON_PIN 21
 
+#define ROTARY_CLK_PIN 6
+#define ROTARY_DT_PIN 5
+#define ROTARY_SW_PIN 4
+
 #define PWM_CHANNEL 0
 
 // U8G2_SSD1306_72X40_ER_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   // EastRising 0.42" OLED
@@ -34,6 +38,38 @@
 //   delay(1000);
 // }
 
+////// ROTARY ENCODER
+
+int counterRT = 0;
+int currentStateCLK;
+int lastStateCLK;
+unsigned long lastButtonPress = 0;
+
+void handleRotaryEncoder()
+{
+    currentStateCLK = digitalRead(ROTARY_CLK_PIN);
+    // React to only HIGH state change to avoid double count
+    if (currentStateCLK != lastStateCLK && currentStateCLK == HIGH) {
+        if (digitalRead(ROTARY_DT_PIN) != currentStateCLK) {
+            counterRT++;
+        } else {
+            counterRT--;
+        }
+        Serial.println(counterRT);
+    }
+    lastStateCLK = currentStateCLK;
+
+    int btnState = digitalRead(ROTARY_SW_PIN);
+    if (btnState == LOW) {
+        if (millis() - lastButtonPress > 50) {
+            Serial.println("Rotary Button pressed!");
+        }
+        lastButtonPress = millis();
+    }
+}
+
+////// ROTARY ENCODER END
+
 // Use timer to generate sound frequency
 void IRAM_ATTR onTimer()
 {
@@ -45,6 +81,12 @@ void setup()
 {
     Serial.begin(115200);
     pinMode(BUTTON_PIN, INPUT_PULLUP); // config GIOP21 as input pin and enable the internal pull-up resistor
+
+    // Set encoder pins as inputs
+    pinMode(ROTARY_CLK_PIN, INPUT);
+    pinMode(ROTARY_DT_PIN, INPUT);
+    pinMode(ROTARY_SW_PIN, INPUT_PULLUP);
+    lastStateCLK = digitalRead(ROTARY_CLK_PIN);
 
     // configure LED PWM functionalitites
     ledcSetup(PWM_CHANNEL, SAMPLE_RATE, 8);
@@ -62,7 +104,6 @@ void setup()
 
 // Variables will change:
 int lastState = HIGH; // the previous state from the input pin
-int currentState; // the current reading from the input pin
 
 uint8_t counter = 0;
 void loop()
@@ -74,10 +115,12 @@ void loop()
         counter++;
     }
 
-    currentState = digitalRead(BUTTON_PIN);
+    int currentState = digitalRead(BUTTON_PIN);
     if (currentState != lastState && currentState == HIGH) {
         Serial.println("Button pressed");
         buttonPressed();
     }
     lastState = currentState;
+
+    handleRotaryEncoder();
 }
