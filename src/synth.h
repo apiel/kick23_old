@@ -99,13 +99,18 @@ void rotaryChanged(int8_t direction)
     APP_LOG("rotaryChanged: %d\n", counterRT);
 }
 
+void rotaryPressed()
+{
+    APP_LOG("rotaryPressed\n");
+}
+
 #define POT_COUNT 3
 
 uint8_t potValue[POT_COUNT] = { 0, 0, 0 };
 void updatePot(uint8_t potIndex, uint8_t value)
 {
     if (potIndex < POT_COUNT && value != potValue[potIndex]) {
-        // Serial.printf("Pot %d value changed: %d\n", potIndex, potValue[potIndex]);
+        APP_LOG("Pot %d value changed: %d\n", potIndex, potValue[potIndex]);
         potValue[potIndex] = value;
     }
 }

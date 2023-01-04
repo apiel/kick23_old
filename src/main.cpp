@@ -61,7 +61,8 @@ void handleRotaryEncoder()
     int btnState = digitalRead(ROTARY_SW_PIN);
     if (btnState == LOW) {
         if (millis() - rotaryLastPush > 50) {
-            Serial.println("Rotary Button pressed!");
+            // Serial.println("Rotary Button pressed!");
+            rotaryPressed();
         }
         rotaryLastPush = millis();
     }

@@ -2,11 +2,11 @@
 
 #include <stdint.h>
 
-#include "../src/synth.h"
-
 #ifndef APP_LOG
 #define APP_LOG printf
 #endif
+
+#include "../src/synth.h"
 
 #define SCREEN_W 480
 #define SCREEN_H 320
@@ -29,6 +29,9 @@
 #define APP_AUDIO_CHUNK 128
 #endif
 
+SDL_Rect pot1 = { 10, 10, 20, 220 };
+SDL_Rect pot2 = { 40, 10, 20, 220 };
+
 bool handleKeyboard(SDL_KeyboardEvent* event)
 {
     SDL_Log("handleKeyboard %d\n", event->keysym.scancode);
@@ -43,6 +46,21 @@ bool handleKeyboard(SDL_KeyboardEvent* event)
             buttonReleased();
         }
         break;
+    case 4: // A
+        if (event->type == SDL_KEYDOWN) {
+            rotaryChanged(-1);
+        }
+        break;
+    case 22: // S
+    if (event->type == SDL_KEYDOWN) {
+            rotaryPressed();
+        }
+        break;
+    case 7: // D
+        if (event->type == SDL_KEYDOWN) {
+            rotaryChanged(+1);
+        }
+        break;
     }
     default:
         break;
@@ -51,6 +69,30 @@ bool handleKeyboard(SDL_KeyboardEvent* event)
     return true;
 }
 
+bool handleMouse(SDL_MouseButtonEvent* event)
+{
+    // SDL_Log("handleMouse %d %d %d %d\n", event->button, event->x, event->y, event->state);
+    SDL_Point mousePosition;
+    mousePosition.x = event->x;
+    mousePosition.y = event->y;
+
+    if (SDL_PointInRect(&mousePosition, &pot1)) {
+        uint8_t value = (float)(event->y - pot1.y) / (float)(pot1.h - pot1.y) * 100;
+        if (value > 100)
+            value = 100;
+        // APP_LOG("pot1 %d\n", value);
+        updatePot(0, value);
+    } else if (SDL_PointInRect(&mousePosition, &pot2)) {
+        uint8_t value = (float)(event->y - pot2.y) / (float)(pot2.h - pot2.y) * 100;
+        if (value > 100)
+            value = 100;
+        // APP_LOG("pot2 %d\n", value);
+        updatePot(1, value);
+    }
+    return true;
+}
+
+bool mouseBtnDown = false;
 bool handleEvent()
 {
     SDL_Event event;
@@ -63,9 +105,28 @@ bool handleEvent()
         switch (event.type) {
         case SDL_QUIT:
             return false;
+
         case SDL_KEYUP:
         case SDL_KEYDOWN:
             return handleKeyboard(&event.key);
+
+        case SDL_MOUSEBUTTONDOWN: {
+            mouseBtnDown = true;
+            handleMouse(&event.button);
+            break;
+        }
+
+        case SDL_MOUSEBUTTONUP: {
+            mouseBtnDown = false;
+            break;
+        }
+
+        case SDL_MOUSEMOTION: {
+            if (mouseBtnDown) {
+                handleMouse(&event.button);
+            }
+            break;
+        }
         }
     }
 
@@ -139,7 +200,7 @@ int main(int argc, char* args[])
         fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
         return 1;
     }
-    // SDL_Surface* screenSurface = SDL_GetWindowSurface(window);
+    SDL_Surface* screenSurface = SDL_GetWindowSurface(window);
 
     SDL_AudioDeviceID audioDevice = initAudio(audioCallBack);
     if (SDL_getenv("APP_SKIP_AUDIO") == NULL && !audioDevice) {
@@ -148,14 +209,21 @@ int main(int argc, char* args[])
 
     SDL_UpdateWindowSurface(window);
 
-    uint8_t counter = 0;
+    // uint8_t counter = 0;
     while (handleEvent()) {
-        if (counter < 3) {
-            printf("Trigger sound\n");
-            triggerSound();
-            SDL_Delay(1000);
-            counter++;
-        }
+        // if (counter < 3) {
+        //     printf("Trigger sound\n");
+        //     triggerSound();
+        //     SDL_Delay(1000);
+        //     counter++;
+        // }
+
+        Uint32 color = SDL_MapRGB(screenSurface->format, 255, 255, 255);
+
+        SDL_FillRect(screenSurface, &pot1, color);
+        SDL_FillRect(screenSurface, &pot2, color);
+
+        SDL_UpdateWindowSurface(window);
         // SDL_Delay(10);
     }
 
