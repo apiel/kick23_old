@@ -12,7 +12,7 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
 // #include <I2S.h>
-#include "./i2s/I2S.h"
+// #include "./i2s/I2S.h"
 
 #ifndef APP_LOG
 void appLog(const char* fmt, ...)
@@ -135,58 +135,58 @@ void setup()
     // timerAlarmWrite(timer, 1, true); // Trigger every 1 tick
     // timerAlarmEnable(timer);
 
-    I2S.begin(SAMPLE_RATE);
+    // I2S.begin(SAMPLE_RATE);
 }
 
-// // Variables will change:
-// int lastState = HIGH; // the previous state from the input pin
+// Variables will change:
+int lastState = HIGH; // the previous state from the input pin
 
-// uint8_t counter = 0;
-// void loop()
-// {
-//     if (counter < 3) {
-//         Serial.println("Trigger sound");
-//         triggerSound();
-//         delay(1000);
-//         counter++;
-//     }
+uint8_t counter = 0;
+void loop()
+{
+    if (counter < 3) {
+        Serial.println("Trigger sound");
+        triggerSound();
+        delay(1000);
+        counter++;
+    }
 
-//     int currentState = digitalRead(BUTTON_PIN);
-//     if (currentState != lastState) {
-//         if (currentState == LOW) {
-//             Serial.println("Button pressed");
-//             buttonPressed();
-//         } else {
-//             Serial.println("Button released");
-//             buttonReleased();
-//         }
-//     }
-//     lastState = currentState;
+    int currentState = digitalRead(BUTTON_PIN);
+    if (currentState != lastState) {
+        if (currentState == LOW) {
+            Serial.println("Button pressed");
+            buttonPressed();
+        } else {
+            Serial.println("Button released");
+            buttonReleased();
+        }
+    }
+    lastState = currentState;
 
-//     // FIXME dont do * 100 and round here...
-//     // 1 / 4095 * 100 = 0.0244140625
-//     updatePot(0, roundf(analogRead(POT1_PIN) * 0.0244140625));
+    // FIXME dont do * 100 and round here...
+    // 1 / 4095 * 100 = 0.0244140625
+    updatePot(0, roundf(analogRead(POT1_PIN) * 0.0244140625));
 
-//     handleRotaryEncoder();
+    handleRotaryEncoder();
+}
+
+// const int freq = 440; // frequency of square wave in Hz
+// const int amplitude = 500; // amplitude of square wave
+// const int sampleRate = SAMPLE_RATE; // sample rate in Hz
+// const int halfWavelength = (sampleRate / freq); // half wavelength of square wave
+// short sample = amplitude; // current sample value
+// int count = 0;
+
+// void loop() {
+//   if (count % halfWavelength == 0) {
+//     // invert the sample every half wavelength count multiple to generate square wave
+//     sample = -1 * sample;
+//   }
+
+//   // write the same sample twice, once for left and once for the right channel
+//   I2S.write(sample);
+//   I2S.write(sample);
+
+//   // increment the counter for the next sample
+//   count++;
 // }
-
-const int freq = 440; // frequency of square wave in Hz
-const int amplitude = 500; // amplitude of square wave
-const int sampleRate = SAMPLE_RATE; // sample rate in Hz
-const int halfWavelength = (sampleRate / freq); // half wavelength of square wave
-short sample = amplitude; // current sample value
-int count = 0;
-
-void loop() {
-  if (count % halfWavelength == 0) {
-    // invert the sample every half wavelength count multiple to generate square wave
-    sample = -1 * sample;
-  }
-
-  // write the same sample twice, once for left and once for the right channel
-  I2S.write(sample);
-  I2S.write(sample);
-
-  // increment the counter for the next sample
-  count++;
-}
