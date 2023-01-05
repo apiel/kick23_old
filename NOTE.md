@@ -20,3 +20,16 @@ I2C
 - use i2c to mix audio between each device and the mixer module could have a dac...
     - com between 2 esp32 https://microcontrollerslab.com/esp32-i2c-communication-tutorial-arduino-ide/
     - but goes against modular module to get output and bring to another module, e.g. filter or effect...
+
+# stm32
+
+stm32f4 has 12 bit dac
+
+https://pallavaggarwal.in/2020/03/13/start-learning-stm32f4-mcu-programming/
+
+# rp2040
+
+board:
+- RP2040-Zero Mini
+- https://www.waveshare.com/wiki/RP2040-Zero
+- https://eckstein-shop.de/WaveShare-RP2040-Zero-MCU-Board-Mini-Version-EN
