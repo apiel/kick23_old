@@ -1,0 +1,1 @@
+For RP2040, we need to use https://github.com/earlephilhower/arduino-pico else I2S is not supported in default plateformIO.
